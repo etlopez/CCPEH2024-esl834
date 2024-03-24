@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
         if (strcmp(message, "exit") == 0) {
             send(sock, message, strlen(message), 0);
             break;
+        }
 
         // Send some data
         if(send(sock , message , strlen(message) , 0) < 0) {
