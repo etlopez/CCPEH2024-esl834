@@ -6,56 +6,49 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#define SERVER_IP "10.0.2.5"
 #define PORT 2024
 
-int main(int argc, char *argv[]) {
+int main() {
     int sock;
-    struct sockaddr_in server;
-    char message[1000] , server_reply[2000];
+    struct sockaddr_in server_addr;
+    char buffer[4096];
 
-    // Create socket
-    sock = socket(AF_INET , SOCK_STREAM , 0);
+    sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
         printf("Could not create socket");
+        return 1;
     }
-    puts("Socket created");
 
-    server.sin_addr.s_addr = inet_addr("10.0.2.5"); // Server IP
-    server.sin_family = AF_INET;
-    server.sin_port = htons(PORT);
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+    server_addr.sin_port = htons(PORT);
 
-    // Connect to remote server
-    if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0) {
+    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("connect failed. Error");
         return 1;
     }
 
-    puts("Connected\n");
+    printf("Connected\n");
 
-    // Communicate with server
-    while(1) {
-        printf("Enter command : ");
-        scanf("%s" , message);
+    while (1) {
+        printf("Enter command: ");
+        fgets(buffer, sizeof(buffer), stdin);
+        buffer[strcspn(buffer, "\n")] = 0; // Remove newline
 
-        if (strcmp(message, "exit") == 0) {
-            send(sock, message, strlen(message), 0);
+        if (strcmp(buffer, "exit") == 0) {
             break;
         }
 
-        // Send some data
-        if(send(sock , message , strlen(message) , 0) < 0) {
-            puts("Send failed");
-            return 1;
-        }
+        send(sock, buffer, strlen(buffer), 0);
 
-        // Receive a reply from the server
-        if(recv(sock , server_reply , 2000 , 0) < 0) {
-            puts("recv failed");
+        int received = 0;
+        while ((received = recv(sock, buffer, sizeof(buffer) - 1, 0)) > 0) {
+            buffer[received] = '\0';
+            printf("%s", buffer);
+            memset(buffer, 0, sizeof(buffer));
         }
-
-        puts("Server reply :");
-        puts(server_reply);
-        memset(server_reply, 0, sizeof(server_reply)); // Clear the buffer
+        printf("\n");
     }
 
     close(sock);
