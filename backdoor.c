@@ -6,36 +6,37 @@
 #include <unistd.h>
 
 #define PORT 2024
+#define BUFFER_SIZE 4096
 
 void process_command(int client_socket) {
-    char buffer[4096];
-    char command_output[4096];
-    FILE *fp;
+    char buffer[BUFFER_SIZE];
 
-    // Zeroing buffers
-    memset(buffer, 0, sizeof(buffer));
-    memset(command_output, 0, sizeof(command_output));
+    while (1) {
+        memset(buffer, 0, BUFFER_SIZE); // Clear buffer
+        ssize_t bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
+        if (bytes_received < 1) {
+            perror("recv");
+            break; // Break the loop and close the connection on error or when the client disconnects
+        }
 
-    // Receive command
-    if (recv(client_socket, buffer, sizeof(buffer), 0) < 0) {
-        perror("recv");
-        return;
+        if (strncmp(buffer, "exit", 4) == 0) {
+            break; // Exit the loop if command is 'exit'
+        }
+
+        // Execute command and send output back
+        FILE *fp = popen(buffer, "r");
+        if (fp == NULL) {
+            printf("Failed to run command\n");
+            continue; // Skip to the next command if this one fails
+        }
+
+        char command_output[BUFFER_SIZE];
+        while (fgets(command_output, sizeof(command_output), fp) != NULL) {
+            send(client_socket, command_output, strlen(command_output), 0);
+        }
+
+        pclose(fp);
     }
-
-    // Execute command
-    fp = popen(buffer, "r");
-    if (fp == NULL) {
-        printf("Failed to run command\n" );
-        exit(1);
-    }
-
-    // Read the output
-    while (fgets(command_output, sizeof(command_output), fp) != NULL) {
-        send(client_socket, command_output, strlen(command_output), 0);
-        memset(command_output, 0, sizeof(command_output)); // Clear buffer after sending
-    }
-
-    pclose(fp);
 }
 
 int main() {
@@ -78,3 +79,4 @@ int main() {
     }
     return 0;
 }
+

@@ -37,6 +37,10 @@ int main(int argc, char *argv[]) {
         printf("Enter command : ");
         scanf("%s" , message);
 
+        if (strcmp(message, "exit") == 0) {
+            send(sock, message, strlen(message), 0);
+            break;
+
         // Send some data
         if(send(sock , message , strlen(message) , 0) < 0) {
             puts("Send failed");
@@ -46,7 +50,6 @@ int main(int argc, char *argv[]) {
         // Receive a reply from the server
         if(recv(sock , server_reply , 2000 , 0) < 0) {
             puts("recv failed");
-            break;
         }
 
         puts("Server reply :");
