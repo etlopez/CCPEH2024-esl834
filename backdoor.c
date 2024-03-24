@@ -1,42 +1,52 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
+#include <pty.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <unistd.h>
 
 #define PORT 2024
-#define BUFFER_SIZE 4096
 
-void process_command(int client_socket) {
-    char buffer[BUFFER_SIZE];
+void handle_client(int client_socket) {
+    int master_fd, pid;
+    
+    // Open a PTY
+    pid = forkpty(&master_fd, NULL, NULL, NULL);
+    if (pid == 0) {
+        // Child process: Start a shell in interactive mode
+        execl("/bin/sh", "sh", NULL);
+    } else {
+        // Parent process: Relay between client and PTY
+        char buffer[1024];
+        ssize_t bytes;
+        while (1) {
+            // Check for data from client
+            fd_set read_fds;
+            FD_ZERO(&read_fds);
+            FD_SET(client_socket, &read_fds);
+            FD_SET(master_fd, &read_fds);
+            
+            select(master_fd + 1, &read_fds, NULL, NULL, NULL);
+            
+            if (FD_ISSET(client_socket, &read_fds)) {
+                bytes = recv(client_socket, buffer, sizeof(buffer), 0);
+                if (bytes <= 0) break; // Client disconnected or error
+                write(master_fd, buffer, bytes); // Write to shell
+            }
 
-    while (1) {
-        memset(buffer, 0, BUFFER_SIZE); // Clear buffer
-        ssize_t bytes_received = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
-        if (bytes_received < 1) {
-            perror("recv");
-            break; // Break the loop and close the connection on error or when the client disconnects
+            if (FD_ISSET(master_fd, &read_fds)) {
+                bytes = read(master_fd, buffer, sizeof(buffer));
+                if (bytes <= 0) break; // Shell terminated or error
+                send(client_socket, buffer, bytes, 0); // Send to client
+            }
         }
-
-        if (strncmp(buffer, "exit", 4) == 0) {
-            break; // Exit the loop if command is 'exit'
-        }
-
-        // Execute command and send output back
-        FILE *fp = popen(buffer, "r");
-        if (fp == NULL) {
-            printf("Failed to run command\n");
-            continue; // Skip to the next command if this one fails
-        }
-
-        char command_output[BUFFER_SIZE];
-        while (fgets(command_output, sizeof(command_output), fp) != NULL) {
-            send(client_socket, command_output, strlen(command_output), 0);
-        }
-
-        pclose(fp);
     }
+
+    // Cleanup
+    close(master_fd);
+    close(client_socket);
 }
 
 int main() {
@@ -72,11 +82,10 @@ int main() {
 
         printf("Got connection...\n");
 
-        process_command(client_socket);
-
-        close(client_socket);
-        printf("Connection closed.\n");
+        handle_client(client_socket);
     }
+
     return 0;
 }
+
 
