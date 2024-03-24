@@ -6,7 +6,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define PORT 4444
+#define PORT 60393
 
 int main(int argc, char *argv[]) {
     int sock;

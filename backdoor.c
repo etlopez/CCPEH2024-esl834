@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#define PORT 4444
+#define PORT 60393
 
 void process_command(int client_socket) {
     char buffer[4096];
