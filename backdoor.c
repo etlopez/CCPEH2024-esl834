@@ -12,7 +12,7 @@ void execute_command(int client_socket) {
 
     while (1) {
         memset(buffer, 0, sizeof(buffer)); // Clear the buffer for each command
-        
+
         // Receive the command from the client
         ssize_t bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
         if (bytes_received <= 0 || strncmp(buffer, "exit", 4) == 0) {
