@@ -53,14 +53,21 @@ int main() {
             break;
         }
 
-        // Receive a reply from the server
+        // Inside the main loop, replace the recv block with the following:
         int received = 0;
-        if ((received = recv(sock, buffer, sizeof(buffer) - 1, 0)) < 0) {
-            puts("recv failed");
-            break;
+        char *ptr = buffer; // Use ptr to keep track of the buffer position
+        int bytes_left = sizeof(buffer) - 1;
+        while ((received = recv(sock, ptr, bytes_left, 0)) > 0) {
+            ptr[received] = '\0'; // Null-terminate the current chunk
+            // Check if the last character received is the delimiter
+            if (buffer[strlen(buffer) - 1] == '\n') {
+                break; // Exit the loop if the delimiter is found
+            }
+            ptr += received; // Move the pointer forward
+            bytes_left -= received; // Decrease the remaining buffer size
         }
-        buffer[received] = '\0'; // Null-terminate the received data
-        printf("Server reply :\n%s\n", buffer);
+        printf("Server reply :\n%s", buffer); // Print the full response
+
 
         // Clear the buffer for the next command
         memset(buffer, 0, sizeof(buffer));

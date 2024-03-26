@@ -30,6 +30,7 @@ void execute_command(int client_socket) {
         while (fgets(buffer, sizeof(buffer), fp) != NULL) {
             send(client_socket, buffer, strlen(buffer), 0);
         }
+        send(client_socket, "\n", 1, 0); // Delimiter to signify end of response
         pclose(fp);
     }
 }
