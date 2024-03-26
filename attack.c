@@ -13,20 +13,18 @@ int main() {
     int sock;
     struct sockaddr_in server_addr;
     char buffer[4096];
+    const char end_delim[] = "\nEND\n";
 
-    // Create socket
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
         printf("Could not create socket\n");
         return 1;
     }
 
-    // Prepare the sockaddr_in structure
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
     server_addr.sin_port = htons(PORT);
 
-    //Connect to remote server
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("connect failed. Error");
         return 1;
@@ -36,38 +34,44 @@ int main() {
 
     while (1) {
         printf("Enter command: ");
-        fflush(stdout); // Make sure "Enter command" is printed immediately
+        fflush(stdout);
 
-        // Get the command from the user
         fgets(buffer, sizeof(buffer), stdin);
         buffer[strcspn(buffer, "\n")] = 0; // Remove newline at the end
 
-        // Exit loop if command is "exit"
         if (strcmp(buffer, "exit") == 0) {
             break;
         }
 
-        // Send the command
         if (send(sock, buffer, strlen(buffer), 0) < 0) {
             puts("Send failed");
             break;
         }
 
-        // Inside the main loop, replace the recv block with the following:
-        int received = 0;
-        char *ptr = buffer; // Use ptr to keep track of the buffer position
-        int bytes_left = sizeof(buffer) - 1;
-        while ((received = recv(sock, ptr, bytes_left, 0)) > 0) {
-            ptr[received] = '\0'; // Null-terminate the current chunk
-            // Check if the last character received is the delimiter
-            if (buffer[strlen(buffer) - 1] == '\n') {
-                break; // Exit the loop if the delimiter is found
+        memset(buffer, 0, sizeof(buffer));
+        char *ptr = buffer;
+        int total_received = 0, n;
+        while ((n = recv(sock,        ptr, sizeof(buffer) - total_received - 1, 0)) > 0) {
+            total_received += n;
+            ptr += n;
+            // Check if the end delimiter is in the buffer
+            if (strstr(buffer, "\nEND\n") != NULL) {
+                break; // Break if end delimiter is found
             }
-            ptr += received; // Move the pointer forward
-            bytes_left -= received; // Decrease the remaining buffer size
+            // Ensure we don't overflow the buffer
+            if (total_received >= sizeof(buffer) - 1) {
+                break;
+            }
         }
-        printf("Server reply :\n%s", buffer); // Print the full response
 
+        if (n < 0) {
+            puts("Receive failed");
+            break;
+        }
+
+        // Replace the delimiter with a null terminator to end the string
+        *strstr(buffer, "\nEND\n") = '\0';
+        printf("Server reply:\n%s\n", buffer);
 
         // Clear the buffer for the next command
         memset(buffer, 0, sizeof(buffer));
@@ -76,3 +80,4 @@ int main() {
     close(sock);
     return 0;
 }
+
