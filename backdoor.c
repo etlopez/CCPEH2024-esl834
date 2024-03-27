@@ -6,6 +6,8 @@
 #include <netinet/in.h>
 
 #define PORT 2024
+#define BUFFER_SIZE 4096
+#define HASHED_KEY "33485e06d7cc0699c8f739a7c62e2fb1c3c3caee"
 
 void execute_command(int client_socket) {
     char buffer[4096];
@@ -67,6 +69,18 @@ int main() {
         client_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_addr_len);
         if (client_socket < 0) {
             perror("accept");
+            continue;
+        }
+
+        memset(buffer, 0, BUFFER_SIZE);
+        if (recv(client_socket, buffer, BUFFER_SIZE, 0) <= 0) {
+            close(client_socket);
+            continue;
+        }
+
+        if (strcmp(buffer, HASHED_KEY) != 0) {
+            printf("Authentication failed.\n");
+            close(client_socket);
             continue;
         }
 

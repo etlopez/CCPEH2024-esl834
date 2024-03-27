@@ -8,6 +8,7 @@
 
 #define PORT 2024
 #define BUFFER_SIZE 4096
+#define HASHED_KEY "33485e06d7cc0699c8f739a7c62e2fb1c3c3caee" // The hashed key
 
 void execute_commands_from_file(int sock, const char *filename) {
     FILE *file = fopen(filename, "r");
@@ -113,6 +114,12 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Connected to %s\n", SERVER_IP);
+
+    if (send(sock, HASHED_KEY, strlen(HASHED_KEY), 0) < 0) {
+        puts("Failed to send authentication key");
+        close(sock);
+        return 1;
+    }
 
     if (mode == 1) {
         execute_commands_from_file(sock, configFile);
