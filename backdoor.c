@@ -79,12 +79,16 @@ int main() {
             continue;
         }
 
-        if (strcmp(buffer, HASHED_KEY) != 0) {
+        if (strcmp(buffer, HASHED_KEY) == 0) {
+            // Authentication successful
+            send(client_socket, "AUTH_OK\n", strlen("AUTH_OK\n"), 0); // Send confirmation to client
+        } else {
+            // Authentication failed
             printf("Authentication failed.\n");
             close(client_socket);
             continue;
         }
-
+        
         execute_command(client_socket);
 
         close(client_socket);

@@ -115,11 +115,24 @@ int main(int argc, char *argv[]) {
 
     printf("Connected to %s\n", SERVER_IP);
 
+    // Send the hashed key for authentication
     if (send(sock, HASHED_KEY, strlen(HASHED_KEY), 0) < 0) {
         puts("Failed to send authentication key");
         close(sock);
         return 1;
     }
+
+    // Wait for authentication confirmation
+    memset(buffer, 0, sizeof(buffer)); // Clear buffer
+    int bytes_received = recv(sock, buffer, sizeof(buffer) - 1, 0);
+    if (bytes_received <= 0 || strncmp(buffer, "AUTH_OK\n", strlen("AUTH_OK\n")) != 0) {
+        puts("Authentication failed or no confirmation from server.");
+        close(sock);
+        return 1;
+    }
+
+// Proceed with sending commands
+
 
     if (mode == 1) {
         execute_commands_from_file(sock, configFile);
