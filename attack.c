@@ -141,30 +141,36 @@ int main(int argc, char *argv[]) {
                 break;
             }
 
-            memset(buffer, 0, sizeof(buffer));
+            // After sending a command to the server...
+            if (send(sock, buffer, strlen(buffer), 0) < 0) {
+                puts("Send failed");
+                break;
+            }
+
+            // Immediately wait for the server's response
+            memset(buffer, 0, sizeof(buffer)); // Clear the buffer for the response
             char *ptr = buffer;
             int total_received = 0, n;
-            while ((n = recv(sock,        ptr, sizeof(buffer) - total_received - 1, 0)) > 0) {
+            while (1) {
+                n = recv(sock, ptr, sizeof(buffer) - total_received - 1, 0);
+                if (n <= 0) { // Connection closed or error
+                    puts("Receive failed or connection closed");
+                    break;
+                }
                 total_received += n;
                 ptr += n;
                 // Check if the end delimiter is in the buffer
                 if (strstr(buffer, "\nEND\n") != NULL) {
                     break; // Break if end delimiter is found
                 }
-                // Ensure we don't overflow the buffer
                 if (total_received >= sizeof(buffer) - 1) {
-                    break;
+                    puts("Response too large for buffer");
+                    break; // Avoid buffer overflow
                 }
             }
-
-            if (n < 0) {
-                puts("Receive failed");
-                break;
-            }
-
-            // Replace the delimiter with a null terminator to end the string
-            *strstr(buffer, "\nEND\n") = '\0';
+            *strstr(buffer, "\nEND\n") = '\0'; // Terminate the string at the delimiter
             printf("Server reply:\n%s\n", buffer);
+
 
             // Clear the buffer for the next command
             memset(buffer, 0, sizeof(buffer));
