@@ -11,44 +11,47 @@
 
 void execute_commands_from_file(int sock, const char *filename) {
     FILE *file = fopen(filename, "r");
+    char command[BUFFER_SIZE];
     char buffer[BUFFER_SIZE];
+    const char end_delim[] = "\nEND\n";
 
     if (!file) {
         perror("Failed to open file");
-        exit(EXIT_FAILURE);
+        return;
     }
 
-    // Skip the first line (SERVER_IP is already set)
-    fgets(buffer, sizeof(buffer), file);
-
-    while (fgets(buffer, sizeof(buffer), file) != NULL) {
-        buffer[strcspn(buffer, "\n")] = 0; // Remove newline at the end
-
-        if (send(sock, buffer, strlen(buffer), 0) < 0) {
+    while (fgets(command, sizeof(command), file) != NULL) {
+        command[strcspn(command, "\n")] = 0; // Remove newline
+        if (send(sock, command, strlen(command), 0) < 0) {
             puts("Send failed");
             break;
         }
 
-        // Wait for and print the response
-        int total_received = 0, n;
-        char *ptr = buffer;
+        // Wait for and process the server's response for each command
         memset(buffer, 0, sizeof(buffer));
+        char *ptr = buffer;
+        int total_received = 0, n;
         while ((n = recv(sock, ptr, sizeof(buffer) - total_received - 1, 0)) > 0) {
             total_received += n;
             ptr += n;
-            if (strstr(buffer, "\nEND\n") != NULL) {
-                break;
+            if (strstr(buffer, end_delim) != NULL) {
+                break; // Break if end delimiter is found
             }
             if (total_received >= sizeof(buffer) - 1) {
-                break;
+                break; // Avoid buffer overflow
             }
         }
-        buffer[strcspn(buffer, "\nEND\n")] = '\0'; // Truncate END delimiter
-        printf("%s\n", buffer);
+        if (n < 0) {
+            puts("Receive failed");
+            break;
+        }
+        *strstr(buffer, end_delim) = '\0'; // Terminate the string at the delimiter
+        printf("%s\n", buffer); // Print the command's output
     }
 
     fclose(file);
 }
+
 
 int main(int argc, char *argv[]) {
     int sock;
