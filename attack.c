@@ -159,7 +159,8 @@ int main(int argc, char *argv[]) {
             // Clear the buffer for the next command
             memset(buffer, 0, sizeof(buffer));
         }
-            close(sock);
+        close(sock);
+    }
     return 0;
 }
 
