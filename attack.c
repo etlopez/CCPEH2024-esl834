@@ -8,7 +8,7 @@
 
 #define PORT 2024
 #define BUFFER_SIZE 4096
-#define HASHED_KEY "33485e06d7cc0699c8f739a7c62e2fb1c3c3caee" // The hashed key
+#define HASHED_KEY "33485e06d7cc0699c8f739a7c62e2fb1c3c3caee"
 
 void execute_commands_from_file(int sock, const char *filename) {
     FILE *file = fopen(filename, "r");
@@ -122,16 +122,20 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Wait for authentication confirmation
-    memset(buffer, 0, sizeof(buffer)); // Clear buffer
-    int bytes_received = recv(sock, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_received <= 0 || strncmp(buffer, "AUTH_OK\n", strlen("AUTH_OK\n")) != 0) {
-        puts("Authentication failed or no confirmation from server.");
+    // After sending the hashed key...
+    char auth_confirmation[10];
+    memset(auth_confirmation, 0, sizeof(auth_confirmation)); // Clear the buffer
+    if (recv(sock, auth_confirmation, sizeof(auth_confirmation) - 1, 0) <= 0) {
+        puts("Failed to receive authentication confirmation");
         close(sock);
         return 1;
     }
 
-// Proceed with sending commands
+    if (strncmp(auth_confirmation, "AUTH_OK\n", 8) != 0) {
+        puts("Authentication failed or no confirmation from server.");
+        close(sock);
+        return 1;
+    }
 
 
     if (mode == 1) {
