@@ -39,6 +39,7 @@ int main() {
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
+    char buffer[BUFFER_SIZE]; // Declare buffer here for use in main
 
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0) {
@@ -72,7 +73,7 @@ int main() {
             continue;
         }
 
-        memset(buffer, 0, BUFFER_SIZE);
+        memset(buffer, 0, BUFFER_SIZE); // Reset buffer for each new connection
         if (recv(client_socket, buffer, BUFFER_SIZE, 0) <= 0) {
             close(client_socket);
             continue;
