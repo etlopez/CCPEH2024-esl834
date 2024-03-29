@@ -59,12 +59,12 @@ int main(int argc, char *argv[]) {
     const char end_delim[] = "\nEND\n";
     char SERVER_IP[16] = {0};
     int mode = 0; 
-    char configFile[255] = {0};
+    char config_file[255] = {0};
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-p") == 0 && (i + 1) < argc) {
             mode = 1;
-            strncpy(configFile, argv[i + 1], sizeof(configFile) - 1);
+            strncpy(config_file, argv[i + 1], sizeof(config_file) - 1);
             i++; 
         } else if (strcmp(argv[i], "-ip") == 0 && (i + 1) < argc) {
             mode = 2;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
 
     if (mode == 1) {
         // read the first line for SERVER_IP
-        FILE *file = fopen(configFile, "r");
+        FILE *file = fopen(config_file, "r");
         if (!file) {
             perror("Failed to open config file");
             return 1;
@@ -115,23 +115,23 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    char auth_confirmation[10];
-    memset(auth_confirmation, 0, sizeof(auth_confirmation)); // Clear the buffer
-    if (recv(sock, auth_confirmation, sizeof(auth_confirmation) - 1, 0) <= 0) {
+    char auth_stat[10];
+    memset(auth_stat, 0, sizeof(auth_stat)); // Clear the buffer
+    if (recv(sock, auth_stat, sizeof(auth_stat) - 1, 0) <= 0) {
         puts("Failed to receive auth confirmation");
         close(sock);
         return 1;
     }
-    if (strncmp(auth_confirmation, "AUTH_OK\n", 8) != 0) {
+    if (strncmp(auth_stat, "AUTH_OK\n", 8) != 0) {
         puts("Auth failed.");
         close(sock);
         return 1;
     }
 
     if (mode == 1) {
-        execute_commands_from_file(sock, configFile);
+        execute_commands_from_file(sock, config_file);
     } else {
-        // Normal operation or -ip mode
+        // interactive shell
         while (1) {
             printf("Enter command: ");
             fflush(stdout);

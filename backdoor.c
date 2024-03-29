@@ -23,7 +23,7 @@ void execute_command(int client_socket) {
 
         FILE *fp = popen(buffer, "r");
         if (!fp) {
-            send(client_socket, "Failed to run command.\n", 23, 0);
+            send(client_socket, "System failure.\n", 23, 0);
             continue;
         }
 
@@ -81,7 +81,7 @@ int main() {
             send(client_socket, "AUTH_OK\n", strlen("AUTH_OK\n"), 0);
             execute_command(client_socket);
         } else {
-            printf("Authentication failed.\n");
+            printf("Auth failed.\n");
             close(client_socket);
         }
         close(client_socket);
